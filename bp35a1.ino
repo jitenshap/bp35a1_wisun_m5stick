@@ -8,6 +8,7 @@ String BID = "YOUR_B_ROUTE_ID";
 String addr = "NG";
 String panId = "NG";
 String channel = "NG";
+int retry = 0;
 
 void discard_buf()
 {
@@ -194,7 +195,7 @@ void setup()
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setCursor(0, 0, 1);
   M5.Lcd.printf("Connecting\r\n");
-  
+  M5.Lcd.setTextSize(4);
   delay(1000);
   Serial.begin(115200);
   Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
@@ -230,19 +231,31 @@ void setup()
     Serial.println("err");
   }
   Serial.println("Scan meter");
-  Serial2.print("SKSCAN 3 FFFFFFFF 6\r\n");
-  Serial.print("SKSCAN 3 FFFFFFFF 6\r\n");
-  if(!read_res())
+  for(int i = 3; i <= 6; i ++)
   {
-    Serial.println("err");
-    Serial.flush();
-    esp_restart();
-  }
-  if(!get_scan_result(6))
-  {
-    Serial.println("err");
-    Serial.flush();
-    esp_restart();
+    Serial2.print("SKSCAN 3 FFFFFFFF " + (String)i + "\r\n");
+    Serial.print("SKSCAN 3 FFFFFFFF " + (String)i + "\r\n");
+    if(!read_res())
+    {
+      Serial.println("err");
+      Serial.flush();
+      esp_restart();
+    }
+    if(!get_scan_result(i))
+    {
+      if(i == 6)
+      {
+        Serial.println("err");
+        Serial.flush();
+        esp_restart();
+      }
+      Serial.println("retry");
+      delay(1000);
+    }
+    else
+    {
+      break;
+    }
   }
   Serial.println("Scan result\r\nAddr: " + addr + ", Channel: " + channel + ", Pan ID: " + panId);
   Serial.println("convert meter address format");  
@@ -296,13 +309,23 @@ void loop()
   int power = get_inst_power();
   if(power == -1)
   {
-    Serial.println("err");
-    Serial.flush();
-    esp_restart();        
+    delay(1000);
+    retry++;
+    if(retry > 4)
+    {
+      Serial.println("err");
+      Serial.flush();
+      esp_restart();
+    }        
+    Serial.println("Retrying");
   }
-  Serial.println((String)power + "W now.");
-  M5.Lcd.fillScreen(BLACK);
-  M5.Lcd.setCursor(0, 0, 1);
-  M5.Lcd.printf("%d W", power);
-  delay(10000);
+  else
+  {
+    retry = 0;
+    Serial.println((String)power + "W now.");
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setCursor(0, 0, 1);
+    M5.Lcd.printf("%d W", power);
+    delay(10000);
+  }
 }
