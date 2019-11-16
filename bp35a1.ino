@@ -1,3 +1,5 @@
+#include <M5StickC.h>
+
 #define RXD2 36
 #define TXD2 0
 String BPWD = "YOUR_B_ROUTE_PASSWORD";
@@ -41,7 +43,7 @@ bool get_scan_result(int dur)
 {
   Serial2.flush();
   int timeout = 0;
-  while(timeout < (dur + 10) * 10)
+  while(timeout < (dur * 30 + 50))
   {
     while(Serial2.available())
     {
@@ -185,6 +187,14 @@ int get_inst_power()
 
 void setup() 
 {
+  M5.begin();
+  M5.Axp.ScreenBreath(10);
+  M5.Lcd.setRotation(3);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("Connecting\r\n");
+  
   delay(1000);
   Serial.begin(115200);
   Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
@@ -291,5 +301,8 @@ void loop()
     esp_restart();        
   }
   Serial.println((String)power + "W now.");
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("%d W", power);
   delay(10000);
 }
