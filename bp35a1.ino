@@ -19,7 +19,6 @@ void discard_buf()
 bool read_res()
 {
   Serial2.flush();
-  while(!Serial2.available()){}
   int timeout = 0;
   while(timeout < 200)
   {
@@ -41,7 +40,6 @@ bool read_res()
 bool get_scan_result(int dur)
 {
   Serial2.flush();
-  while(!Serial2.available()){}
   int timeout = 0;
   while(timeout < (dur + 10) * 10)
   {
@@ -87,7 +85,6 @@ bool get_scan_result(int dur)
 String get_ipv6_addr()
 {
   Serial2.flush();
-  while(!Serial2.available()){}
   int timeout = 0;
   while(timeout < 200)
   {
@@ -109,7 +106,6 @@ String get_ipv6_addr()
 bool get_connecting_status()
 {
   Serial2.flush();
-  while(!Serial2.available()){}
   int timeout = 0;
   while(timeout < 300)
   {
@@ -138,7 +134,6 @@ bool get_connecting_status()
 int get_and_parse_inst_data()
 {
   Serial2.flush();
-  while(!Serial2.available()){}
   int timeout = 0;
   while(timeout < 100)
   {
