@@ -1,0 +1,2 @@
+# bp35a1_wisun_m5stick
+M5StickでBP35A1を使って瞬時値を取得するサンプル
