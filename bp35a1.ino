@@ -2,14 +2,18 @@
 
 #define RXD2 36
 #define TXD2 0
+//個人設定
 String BPWD = "YOUR_B_ROUTE_PASSWORD";
 String BID = "YOUR_B_ROUTE_ID";
 
+//スキャン結果はグローバルに突っ込んどく
 String addr = "NG";
 String panId = "NG";
 String channel = "NG";
+
 int retry = 0;
 
+//Serial2のバッファクリア
 void discard_buf()
 {
   delay(1000);
@@ -18,7 +22,8 @@ void discard_buf()
     Serial2.read();
   }
 }
- 
+
+//レスポンスからOKを探す
 bool read_res()
 {
   Serial2.flush();
@@ -27,9 +32,13 @@ bool read_res()
   {
     String line = Serial2.readStringUntil('\n');
     Serial.println(line);
-    if(line.indexOf("OK") > -1 )
+    if(line.indexOf("FAIL ER") > -1)
     {
       discard_buf();
+      return false;
+    }
+    else if(line.indexOf("OK") > -1 )
+    {
       return true;
     }
     delay(100);
@@ -39,7 +48,7 @@ bool read_res()
   return false;
 }
 
-
+//スキャン結果のパース
 bool get_scan_result(int dur)
 {
   Serial2.flush();
@@ -85,6 +94,7 @@ bool get_scan_result(int dur)
   return false;
 }
 
+//スキャン結果のメーターアドレスをIPv6アドレス形式に変換
 String get_ipv6_addr()
 {
   Serial2.flush();
@@ -106,11 +116,12 @@ String get_ipv6_addr()
   return "NG";
 }
 
+//EVENT 25が来るのを待つ
 bool get_connecting_status()
 {
   Serial2.flush();
   int timeout = 0;
-  while(timeout < 300)
+  while(true)
   {
     while(Serial2.available())
     {
@@ -128,17 +139,18 @@ bool get_connecting_status()
       }
     }
     timeout ++;
-    delay(100);
+    //delay(100);
   }
   discard_buf();
   return false;
 }
 
+//瞬時電力レスポンスを受信してパース
 int get_and_parse_inst_data()
 {
   Serial2.flush();
   int timeout = 0;
-  while(timeout < 100)
+  while(timeout < 3000)
   {
     while(Serial2.available())
     {
@@ -161,6 +173,8 @@ int get_and_parse_inst_data()
   discard_buf();
   return -1;  
 }
+
+//瞬時電力をリクエストして取得する
 
 int get_inst_power()
 {
@@ -194,7 +208,7 @@ void setup()
   M5.Lcd.setTextSize(2);
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setCursor(0, 0, 1);
-  M5.Lcd.printf("Connecting\r\n");
+  M5.Lcd.printf("Hello\r\n");
   M5.Lcd.setTextSize(4);
   delay(1000);
   Serial.begin(115200);
@@ -213,6 +227,11 @@ void setup()
   {
     Serial.println("err"); 
   }
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("BP35A1\r\nConnected\r\nInitializing");
+  M5.Lcd.setTextSize(4);
   Serial.println("Force disconnect");
   Serial2.print("SKTERM\r\n");
   discard_buf();
@@ -230,6 +249,11 @@ void setup()
   {
     Serial.println("err");
   }
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("Scanning\r\n");
+  M5.Lcd.setTextSize(4);
   Serial.println("Scan meter");
   for(int i = 3; i <= 6; i ++)
   {
@@ -257,6 +281,12 @@ void setup()
       break;
     }
   }
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("Meter\r\ndetected\r\n");
+  M5.Lcd.print(addr);
+  M5.Lcd.setTextSize(4);
   Serial.println("Scan result\r\nAddr: " + addr + ", Channel: " + channel + ", Pan ID: " + panId);
   Serial.println("convert meter address format");  
   Serial2.print("SKLL64 " + addr + "\r\n");
@@ -287,6 +317,11 @@ void setup()
     Serial.flush();
     esp_restart();
   } 
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("Connecting\r\n");
+  M5.Lcd.setTextSize(4);
   Serial.println("Connect");
   Serial2.print("SKJOIN " + addr +"\r\n");
   Serial.print("SKJOIN " + addr +"\r\n");
@@ -302,6 +337,12 @@ void setup()
     Serial.flush();
     esp_restart();    
   }
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 0, 1);
+  M5.Lcd.printf("Connected\r\n");
+  M5.Lcd.setTextSize(4);
+
 }
  
 void loop() 
@@ -311,6 +352,8 @@ void loop()
   {
     delay(1000);
     retry++;
+    M5.Lcd.printf(".");
+    //瞬時電力取得が4連続失敗したら接続からやり直す
     if(retry > 4)
     {
       Serial.println("err");
@@ -325,7 +368,7 @@ void loop()
     Serial.println((String)power + "W now.");
     M5.Lcd.fillScreen(BLACK);
     M5.Lcd.setCursor(0, 0, 1);
-    M5.Lcd.printf("%d W", power);
-    delay(10000);
+    M5.Lcd.printf("%d W\r\n", power);
+    delay(7500);
   }
 }
